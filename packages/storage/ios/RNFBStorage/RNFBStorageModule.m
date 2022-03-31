@@ -488,7 +488,16 @@ RCT_EXPORT_METHOD(useEmulator
                   : (NSInteger)port) {
   emulatorHost = host;
   emulatorPort = port;
-  [[FIRStorage storageForApp:firebaseApp] useEmulatorWithHost:host port:port];
+  // Prevent throwing an exception when reloading while using the emulator
+  // See: https://github.com/invertase/react-native-firebase/issues/5860
+  @try {
+    [[FIRStorage storageForApp:firebaseApp] useEmulatorWithHost:host port:port];
+  } @catch (NSException *e) {
+    // Ignore "Cannot connect to emulator after Storage SDK initialization."
+    if ([e name] != NSInternalInconsistencyException) {
+      @throw e;
+    }
+  }
 }
 
 /**
